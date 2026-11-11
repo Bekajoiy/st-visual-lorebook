@@ -1,0 +1,12 @@
+{
+    "display_name": "Visual Lorebook / Codex",
+    "loading_order": 200,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "Visual Lorebook",
+    "version": "1.4.0",
+    "homePage": "",
+    "auto_update": false
+}

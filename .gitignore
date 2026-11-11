@@ -1,0 +1,23 @@
+# Local dependencies and tooling
+node_modules/
+.env
+.env.*
+.vscode/
+.idea/
+.codex/
+.agents/
+
+# Local SillyTavern data and disposable test output
+/data/
+/worlds/
+/coverage/
+/test-results/
+/playwright-report/
+*.log
+*.tmp
+*.bak
+
+# Desktop metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
