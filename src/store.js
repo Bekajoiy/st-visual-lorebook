@@ -7,6 +7,8 @@
  * preserves on import/export and ignores during prompt generation.
  */
 
+import { observeNativeCache } from './native-cache.js';
+
 const WI_MODULE_PATH = '/scripts/world-info.js';
 const SCHEMA_KEY = 'visual_lorebook';
 const SCHEMA_VERSION = 1;
@@ -57,6 +59,16 @@ export const SELECTIVE_LOGIC = [
 /* ------------------------------------------------------------ ST API bridge */
 
 let moduleCache = null;
+let nativeCacheGuard;
+
+export async function initializeNativeCacheProtection() {
+    const mod = await wiModule();
+    nativeCacheGuard ??= observeNativeCache(mod.worldInfoCache);
+}
+
+export function confirmNativeBookUpdate(name, data) {
+    nativeCacheGuard?.confirmNativeUpdate(name, data);
+}
 
 async function wiModule() {
     if (moduleCache) return moduleCache;
@@ -167,6 +179,7 @@ async function readStoredBook(name, creating = false) {
 }
 
 function nativeCacheDiffers(cache, name, json) {
+    if (nativeCacheGuard) return nativeCacheGuard.hasConflict(name, json);
     return Boolean(cache?.has(name) && JSON.stringify(cache.get(name)) !== json);
 }
 
@@ -243,9 +256,13 @@ async function writeBook(name, key, data, json) {
             'This lorebook changed outside Codex. Copy your draft, close the editor to reload, then reapply your changes.',
         );
     }
-    if (nativeCacheDiffers(mod.worldInfoCache, name, baseline.json)) {
-        throw new Error('SillyTavern has pending or different native edits. Finish saving in the native editor before retrying here.');
+    if (nativeCacheGuard?.isUncertain(name)) {
+        throw new Error('A native save could not be confirmed. Keep a copy of your draft and verify the saved lorebook before refreshing SillyTavern.');
     }
+    if (nativeCacheDiffers(mod.worldInfoCache, name, baseline.json)) {
+        throw new Error('SillyTavern has pending or different native edits. Keep your draft, then finish or retry the save in the native World Info editor. Reopen Codex to load the saved version.');
+    }
+    const nativeRevision = nativeCacheGuard?.revision(name);
     // ST's saveWorldInfo currently ignores HTTP errors and publishes to the cache
     // before the request succeeds. Use the same atomic server endpoint, checking
     // its acknowledgement before publishing to the native cache/event bus.
@@ -260,14 +277,16 @@ async function writeBook(name, key, data, json) {
         invalidateBook(data);
         throw new Error(`${error.message} ${UNCONFIRMED_SAVE}`, { cause: error });
     }
-    if (staleBooks.has(data) || nativeCacheDiffers(mod.worldInfoCache, name, baseline.json)) {
+    if (staleBooks.has(data) || nativeCacheDiffers(mod.worldInfoCache, name, baseline.json)
+        || nativeRevision !== nativeCacheGuard?.revision(name)) {
         invalidateBook(data);
         throw new Error('Another component changed this lorebook during the save. The request completed, but its final state needs verification. Keep a copy of your draft and reload; no automatic retry will overwrite it.');
     }
     baseline.json = json;
     baseline.nativeChanges = false;
     const payload = JSON.parse(json);
-    mod.worldInfoCache.set(name, JSON.parse(json));
+    if (nativeCacheGuard) nativeCacheGuard.publish(name, payload);
+    else mod.worldInfoCache.set(name, JSON.parse(json));
     activeSavedPayloads.add(payload);
     void notifyBookSaved(context, name, payload);
     void refreshNativeEditor(name);

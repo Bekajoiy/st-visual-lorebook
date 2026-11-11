@@ -991,16 +991,216 @@
     cursor: pointer;
 }
 
-/* ----------------------------------------------------------- image uploader */
-.st-codex-filter-controls {
-    display: grid;
-    gap: 7px;
+/* ------------------------------------------------------- entry editor layout */
+.st-codex-modal:has(.st-codex-entry-workspace) {
+    --codex-border: #333443;
+    --codex-surface-2: #22232d;
+    --codex-surface-3: #2b2d3a;
+    --codex-text: #ececf1;
+    --codex-accent: #3c6bc8;
+    --codex-danger: #ff9ba7;
+    width: min(1080px, 100%);
 }
 
-.st-codex-filter-controls > * {
+.st-codex-modal:has(.st-codex-entry-workspace) .st-codex-modal-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.st-codex-modal:has(.st-codex-entry-workspace) .st-codex-modal-body,
+.st-codex-entry-writing .st-codex-textarea {
+    scrollbar-width: thin;
+    scrollbar-color: #4d5165 #18181c;
+}
+
+.st-codex-entry-workspace {
+    --codex-editor-gap: 16px;
+}
+
+.st-codex-entry-workspace .st-codex-hint {
+    color: #a1a3b3;
+}
+
+.st-codex-entry-identity {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(135px, 24%);
+    align-items: end;
+    gap: var(--codex-editor-gap);
+    margin-bottom: 20px;
+}
+
+.st-codex-entry-identity > *,
+.st-codex-entry-appearance-fields > * {
+    min-width: 0;
+}
+
+.st-codex-entry-title-input {
+    min-height: 52px;
+    border-color: #3e4b69;
+    background: #141722;
+    font-size: clamp(19px, 2.1vw, 25px);
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.st-codex-entry-columns {
+    display: grid;
+    grid-template-columns: minmax(0, 1.38fr) minmax(0, 1fr);
+    gap: var(--codex-editor-gap);
+}
+
+.st-codex-entry-writing {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    border: 1px solid #3b455b;
+    border-radius: 10px;
+    background: #121318;
+}
+
+.st-codex-entry-writing:focus-within { border-color: #6b96ed; }
+
+.st-codex-entry-writing-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 4px 12px;
+    padding: 12px 15px 10px;
+    border-bottom: 1px solid #2b2e3a;
+}
+
+.st-codex-entry-writing-head > * { margin: 0; }
+
+.st-codex-entry-writing-head .st-codex-label,
+.st-codex-entry-keywords .st-codex-key-heading .st-codex-label {
+    color: #e0e5f5;
+    font-size: 13px;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.st-codex-entry-writing .st-codex-textarea {
+    flex: 1 0 auto;
+    min-height: clamp(220px, 34vh, 390px);
+    padding: 13px 15px;
+    border: 0;
+    border-radius: 0 0 10px 10px;
+    background: transparent;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.65;
+}
+
+.st-codex-entry-keywords {
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid #303342;
+    border-radius: 10px;
+    background: #1a1b23;
+}
+
+.st-codex-entry-keywords .st-codex-key-field { margin: 0; }
+.st-codex-entry-keywords .st-codex-key-text { min-height: 86px; }
+
+.st-codex-entry-filter {
+    margin-top: 13px;
+    padding-top: 13px;
+    border-top: 1px solid #303342;
+}
+
+.st-codex-filter-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: end;
+    gap: 8px;
+    margin-top: 9px;
+}
+
+.st-codex-filter-controls > * { margin: 0; }
+
+.st-codex-filter-controls .st-codex-select,
+.st-codex-filter-controls .st-codex-toggle {
+    min-height: 36px;
+    padding: 5px 8px;
+}
+
+.st-codex-filter-controls .st-codex-toggle {
+    gap: 6px;
     margin: 0;
 }
 
+.st-codex-filter-controls .st-codex-toggle-text strong {
+    font-size: 11px;
+}
+
+.st-codex-entry-appearance {
+    margin-top: var(--codex-editor-gap);
+    border: 1px solid #323441;
+    border-radius: 10px;
+    background: #1c1d25;
+}
+
+.st-codex-entry-appearance summary {
+    display: flex;
+    align-items: center;
+    gap: 8px 12px;
+    padding: 12px 14px;
+    list-style: none;
+    cursor: pointer;
+    border-radius: inherit;
+}
+
+.st-codex-entry-appearance summary::-webkit-details-marker { display: none; }
+.st-codex-entry-appearance summary:focus-visible { outline: 2px solid #82a9fb; outline-offset: 2px; }
+.st-codex-entry-appearance summary:hover { background: #232530; }
+.st-codex-entry-appearance summary > span { color: #a1a3b3; font-size: 12px; }
+.st-codex-entry-appearance summary > i { margin-inline-start: auto; color: #a1a3b3; font-size: 11px; }
+.st-codex-entry-appearance[open] summary > i { transform: rotate(180deg); }
+
+.st-codex-entry-appearance-fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+    gap: var(--codex-editor-gap);
+    padding: 12px 14px;
+    border-top: 1px solid #323441;
+}
+
+.st-codex-entry-appearance .st-codex-image-preview {
+    flex-basis: 72px;
+    width: 72px;
+    height: 72px;
+}
+
+@media (max-width: 760px) {
+    .st-codex-entry-columns,
+    .st-codex-entry-appearance-fields {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 470px) {
+    .st-codex-entry-workspace { --codex-editor-gap: 12px; }
+    .st-codex-entry-identity { grid-template-columns: minmax(0, 1fr); }
+    .st-codex-entry-appearance summary { flex-wrap: wrap; }
+    .st-codex-modal:has(.st-codex-entry-workspace) > .st-codex-modal-body { padding-inline: 14px; }
+    .st-codex-modal:has(.st-codex-entry-workspace) > .st-codex-modal-foot {
+        gap: 6px;
+        padding-inline: 12px;
+    }
+    .st-codex-modal:has(.st-codex-entry-workspace) > .st-codex-modal-foot .st-codex-btn {
+        padding-inline: 8px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 335px) {
+    .st-codex-filter-controls { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ----------------------------------------------------------- image uploader */
 .st-codex-modal:has(.st-codex-crop) {
     --codex-accent: #325fc0;
     --codex-border: #3a3a46;
@@ -2303,20 +2503,6 @@ body.st-codex-body-lock {
     background: rgba(255, 255, 255, 0.13);
     font-size: 11px;
 }
-
-.st-codex-native-settings {
-    margin: 8px 0;
-    padding: 8px 10px;
-    border: 1px solid var(--SmartThemeBorderColor, #555);
-    border-radius: 8px;
-}
-
-.st-codex-native-settings summary {
-    font-weight: 700;
-    cursor: pointer;
-}
-
-.st-codex-native-settings label { margin: 8px 0 4px; }
 
 @media (prefers-reduced-motion: reduce) {
     .st-codex-open-btn { transition: none; }

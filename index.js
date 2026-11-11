@@ -8,7 +8,9 @@
  */
 
 import { open, close, toggle, isOpen, mount, state, app } from './src/ui.js';
-import { invalidateBook, isOwnBookUpdate } from './src/store.js';
+import { confirmNativeBookUpdate, initializeNativeCacheProtection, invalidateBook, isOwnBookUpdate } from './src/store.js';
+
+void initializeNativeCacheProtection();
 
 const MENU_ITEM_ID = 'st-codex-menu-item';
 const TOPBAR_ID = 'st-codex-open-button';
@@ -89,59 +91,26 @@ function registerShortcut() {
     });
 }
 
-function installNativeOpenPreference() {
+function installSettingsPanel() {
     const container = document.getElementById('extensions_settings');
-    const context = SillyTavern.getContext();
-    if (!container || !context.extensionSettings) return;
+    if (!container || document.getElementById('st-codex-extension-settings')) return;
 
-    const panel = document.createElement('details');
-    panel.className = 'st-codex-native-settings';
+    const panel = document.createElement('div');
+    panel.id = 'st-codex-extension-settings';
+    panel.className = 'inline-drawer';
     panel.innerHTML = `
-        <summary>Visual Lorebook / Codex</summary>
-        <label class="checkbox_label" for="st-codex-open-from-native">
-            <input type="checkbox" id="st-codex-open-from-native" aria-describedby="st-codex-native-open-hint">
-            Open lorebooks in Codex from Pick to Edit
-        </label>
-        <small id="st-codex-native-open-hint">Applies to the lorebook editor picker. Active-world selection works as usual.</small>`;
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b>Visual Lorebook / Codex</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <button type="button" class="menu_button menu_button_icon">
+                <i class="fa-solid fa-book-open" aria-hidden="true"></i>
+                <span>Open Codex</span>
+            </button>
+        </div>`;
+    panel.querySelector('button').addEventListener('click', () => open());
     container.appendChild(panel);
-    const input = panel.querySelector('input');
-    const settings = () => SillyTavern.getContext().extensionSettings;
-    const enabled = () => settings()?.visual_lorebook?.openFromNative === true;
-    const sync = () => { input.checked = enabled(); };
-    sync();
-    input.addEventListener('change', () => {
-        const preferences = settings();
-        preferences.visual_lorebook = { ...preferences.visual_lorebook, openFromNative: input.checked };
-        context.saveSettingsDebounced();
-    });
-
-    const selector = '#world_editor_select';
-    function openSelected(select) {
-        if (!enabled()) return;
-        const option = select.selectedOptions[0];
-        if (!option?.value || option.disabled) return;
-        const names = context.getWorldInfoNames?.();
-        const name = names ? names[option.value] : option.textContent;
-        if (name) void open(name, { exact: true });
-    }
-    // Select2 raises a user-selection event. The plain mobile select instead
-    // emits a trusted DOM change. Host-driven change events use neither path.
-    const nativeSelection = new AbortController();
-    document.addEventListener('change', event => {
-        if (event.isTrusted && event.target.matches?.(selector)
-            && !event.target.classList.contains('select2-hidden-accessible')) openSelected(event.target);
-    }, { signal: nativeSelection.signal });
-    const namespace = '.stCodexNativeOpen';
-    jQuery(document).on(`select2:select${namespace}`, selector, function () { openSelected(this); });
-    const settingsLoaded = (context.event_types || context.eventTypes)?.EXTENSION_SETTINGS_LOADED;
-    if (settingsLoaded) context.eventSource?.on(settingsLoaded, sync);
-    window.addEventListener('pagehide', function cleanup(event) {
-        if (event.persisted) return;
-        nativeSelection.abort();
-        jQuery(document).off(namespace);
-        if (settingsLoaded) context.eventSource?.removeListener(settingsLoaded, sync);
-        window.removeEventListener('pagehide', cleanup);
-    });
 }
 
 function registerSlashCommand() {
@@ -180,9 +149,11 @@ function registerEventHooks() {
         // under an open modal), so only react to *foreign* changes.
         if (eventTypes.WORLDINFO_UPDATED) {
             eventSource.on(eventTypes.WORLDINFO_UPDATED, (name, data) => {
+                if (isOwnBookUpdate(data)) return;
+                confirmNativeBookUpdate(name, data);
                 if (!state.worldName) return;
                 if (name !== state.worldName) return;
-                if (data === state.data || isOwnBookUpdate(data)) return;
+                if (data === state.data) return;
                 invalidateBook(state.data);
                 if (isOpen()) app.reload();
             });
@@ -201,7 +172,7 @@ jQuery(async () => {
     registerShortcut();
     registerSlashCommand();
     registerEventHooks();
-    installNativeOpenPreference();
+    installSettingsPanel();
 
     // Public handle for power users and other extensions.
     window.visualLorebook = { open, close, toggle, isOpen, mount, state };

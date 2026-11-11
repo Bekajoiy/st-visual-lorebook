@@ -87,8 +87,9 @@ function createModal({ title, body, footer, small = false, onClose, beforeClose 
         const open = document.querySelectorAll('.st-codex-modal-backdrop');
         if (open[open.length - 1] !== backdrop) return;
         if (event.key === 'Tab') {
-            const controls = [...backdrop.querySelectorAll('button, input, textarea, select, [tabindex="0"]')]
-                .filter(element => !element.disabled && element.getClientRects().length);
+            const controls = [...backdrop.querySelectorAll('button, input, textarea, select, summary, [tabindex="0"]')]
+                .filter(element => !element.disabled && element.getClientRects().length
+                    && (!element.closest('details:not([open])') || element.matches('summary')));
             const first = controls[0], last = controls.at(-1);
             if (first && (event.shiftKey ? document.activeElement === first : document.activeElement === last)) {
                 event.preventDefault();
@@ -206,7 +207,7 @@ export function openEntryEditor(app, entry, defaultCategoryId, { duplicateOf } =
     let initialState;
     let saveEntry;
 
-    const keyField = (id, label, placeholder) => `
+    const keyField = (id, label, placeholder, help) => `
         <div class="st-codex-field st-codex-key-field">
             <div class="st-codex-key-heading">
                 <label class="st-codex-label" for="${id}">${label}</label>
@@ -219,9 +220,9 @@ export function openEntryEditor(app, entry, defaultCategoryId, { duplicateOf } =
                 </div>
             </div>
             <textarea class="st-codex-input st-codex-key-text" id="${id}" rows="2"
-                placeholder="${placeholder}" aria-label="${label}"></textarea>
+                placeholder="${placeholder}" aria-describedby="${id}-help"></textarea>
             <div class="st-codex-key-tags" hidden aria-label="${label} tags"></div>
-            <span class="st-codex-hint">Comma separated. Click a tag to edit it in Text mode.</span>
+            <span class="st-codex-hint" id="${id}-help">${help}</span>
         </div>`;
 
     const categoryOptions = app.categories
@@ -283,91 +284,100 @@ export function openEntryEditor(app, entry, defaultCategoryId, { duplicateOf } =
 
     const body = `
         <div class="st-codex-tabs">
-            <button class="st-codex-tab st-codex-tab-active" data-tab="visual" type="button">
+            <button class="st-codex-tab st-codex-tab-active" data-tab="visual" type="button" aria-pressed="true" aria-controls="st-codex-editor-visual">
                 <i class="fa-solid fa-image"></i> Visual &amp; Content
             </button>
-            <button class="st-codex-tab" data-tab="settings" type="button">
+            <button class="st-codex-tab" data-tab="settings" type="button" aria-pressed="false" aria-controls="st-codex-editor-settings">
                 <i class="fa-solid fa-sliders"></i> Entry Settings
             </button>
         </div>
         <div class="st-codex-modal-body">
-            <div class="st-codex-panel" data-panel="visual">
-                <div class="st-codex-row">
-                    <div class="st-codex-field" style="flex:2 1 320px">
+            <div class="st-codex-panel st-codex-entry-workspace" id="st-codex-editor-visual" data-panel="visual">
+                <div class="st-codex-entry-identity">
+                    <div>
                         <label class="st-codex-label" for="st-codex-ed-title">Entry Title</label>
-                        <input class="st-codex-input" id="st-codex-ed-title" type="text"
-                               value="${escapeHtml(draft.comment || '')}" placeholder="e.g. Vâlceanu Enclave">
-                        <span class="st-codex-hint">Stored in SillyTavern's native <code>comment</code> / memo field.</span>
+                        <input class="st-codex-input st-codex-entry-title-input" id="st-codex-ed-title" type="text"
+                               value="${escapeHtml(draft.comment || '')}" placeholder="Name this entry">
                     </div>
-                    <div class="st-codex-field" style="flex:1 1 180px">
+                    <div>
                         <label class="st-codex-label" for="st-codex-ed-category">Category</label>
                         <select class="st-codex-select" id="st-codex-ed-category">${categoryOptions}</select>
                     </div>
                 </div>
 
-                <div class="st-codex-field">
-                    <label class="st-codex-label">Thumbnail</label>
-                    <div class="st-codex-image-row">
-                        <div class="st-codex-image-preview" id="st-codex-img-preview"></div>
-                        <div class="st-codex-image-controls">
-                            <div class="st-codex-image-buttons">
-                                <button class="st-codex-btn st-codex-btn-sm" id="st-codex-img-upload" type="button">
-                                    <i class="fa-solid fa-upload"></i> Upload
-                                </button>
-                                <button class="st-codex-btn st-codex-btn-sm" id="st-codex-img-remove" type="button">
-                                    <i class="fa-solid fa-trash-can"></i> Remove
-                                </button>
-                                <input type="file" id="st-codex-img-file" accept="image/*" hidden>
+                <div class="st-codex-entry-columns">
+                    <div class="st-codex-entry-writing">
+                        <div class="st-codex-entry-writing-head">
+                            <label class="st-codex-label" for="st-codex-ed-content">Lore Content</label>
+                            <span class="st-codex-hint" id="st-codex-ed-tokens" aria-live="polite">Counting content tokens…</span>
+                        </div>
+                        <textarea class="st-codex-textarea" id="st-codex-ed-content"
+                                  placeholder="Write the lore SillyTavern should inject when this entry triggers…"></textarea>
+                    </div>
+
+                    <div class="st-codex-entry-keywords">
+                        ${keyField('st-codex-ed-keys', 'Primary Trigger Keys', 'e.g. enclave, city, outpost',
+                            'Used for keyword activation. Separate keys with commas.')}
+                        <div class="st-codex-entry-filter">
+                            ${keyField('st-codex-ed-secondary', 'Optional Filter Keys', 'e.g. north gate, night watch',
+                                'Separate filter keys with commas.')}
+                            <div class="st-codex-filter-controls" role="group" aria-labelledby="st-codex-filter-label" aria-describedby="st-codex-filter-hint">
+                                <div class="st-codex-field">
+                                    <label class="st-codex-label" id="st-codex-filter-label" for="st-codex-ed-logic">Filter-key logic</label>
+                                    <select class="st-codex-select" id="st-codex-ed-logic">${logicOptions}</select>
+                                </div>
+                                <label class="st-codex-toggle" for="st-codex-ed-selective">
+                                    <span class="st-codex-toggle-text"><strong>Require a filter key</strong></span>
+                                    <input type="checkbox" id="st-codex-ed-selective" ${draft.selective !== false ? 'checked' : ''}>
+                                    <span class="st-codex-toggle-track" aria-hidden="true"><span></span></span>
+                                </label>
                             </div>
-                            <input class="st-codex-input" id="st-codex-img-url" type="text"
-                                   placeholder="Image URL or path served by SillyTavern">
-                            <span class="st-codex-hint">
-                                Upload or paste an image to frame a 250 × 250 thumbnail before saving.
-                            </span>
+                            <span class="st-codex-hint" id="st-codex-filter-hint">Apply this rule to the filter keys after a primary match when the switch is on.</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="st-codex-field">
-                    <label class="st-codex-label" for="st-codex-ed-importance">Subtitle / Importance</label>
-                    <input class="st-codex-input" id="st-codex-ed-importance" type="text"
-                           list="st-codex-importance-list" value="${escapeHtml(visual.importanceLabel || 'Standard')}">
-                    <datalist id="st-codex-importance-list">
-                        ${IMPORTANCE_LABELS.map(label => `<option value="${escapeHtml(label)}"></option>`).join('')}
-                    </datalist>
-                    <span class="st-codex-hint">Purely cosmetic label shown under the card title.</span>
-                </div>
-
-                <div class="st-codex-row">
-                    ${keyField('st-codex-ed-keys', 'Primary Trigger Keys', 'enclave, valceanu, city')}
-                    ${keyField('st-codex-ed-secondary', 'Optional Filter Keys', 'optional secondary keys')}
-                </div>
-
-                <div class="st-codex-filter-controls" role="group" aria-labelledby="st-codex-filter-label" aria-describedby="st-codex-filter-hint">
-                    <div class="st-codex-field">
-                        <label class="st-codex-label" id="st-codex-filter-label" for="st-codex-ed-logic">Filter-key logic</label>
-                        <select class="st-codex-select" id="st-codex-ed-logic">${logicOptions}</select>
+                <details class="st-codex-entry-appearance">
+                    <summary>
+                        <strong>Card appearance</strong>
+                        <span>Thumbnail and subtitle</span>
+                        <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                    </summary>
+                    <div class="st-codex-entry-appearance-fields">
+                        <div>
+                            <label class="st-codex-label" for="st-codex-img-url">Thumbnail</label>
+                            <div class="st-codex-image-row">
+                                <div class="st-codex-image-preview" id="st-codex-img-preview"></div>
+                                <div class="st-codex-image-controls">
+                                    <div class="st-codex-image-buttons">
+                                        <button class="st-codex-btn st-codex-btn-sm" id="st-codex-img-upload" type="button">
+                                            <i class="fa-solid fa-upload"></i> Upload
+                                        </button>
+                                        <button class="st-codex-btn st-codex-btn-sm" id="st-codex-img-remove" type="button">
+                                            <i class="fa-solid fa-trash-can"></i> Remove
+                                        </button>
+                                        <input type="file" id="st-codex-img-file" accept="image/*" hidden>
+                                    </div>
+                                    <input class="st-codex-input" id="st-codex-img-url" type="text"
+                                           placeholder="Image URL or path served by SillyTavern">
+                                    <span class="st-codex-hint">Upload or paste an image to crop it to 250 × 250.</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="st-codex-label" for="st-codex-ed-importance">Subtitle / Importance</label>
+                            <input class="st-codex-input" id="st-codex-ed-importance" type="text"
+                                   list="st-codex-importance-list" value="${escapeHtml(visual.importanceLabel || 'Standard')}">
+                            <datalist id="st-codex-importance-list">
+                                ${IMPORTANCE_LABELS.map(label => `<option value="${escapeHtml(label)}"></option>`).join('')}
+                            </datalist>
+                            <span class="st-codex-hint">Shown under the title on the card.</span>
+                        </div>
                     </div>
-                    <label class="st-codex-toggle" for="st-codex-ed-selective">
-                        <span class="st-codex-toggle-text">
-                            <strong>Require a filter key</strong>
-                            <small>Secondary keys must match before this entry can trigger.</small>
-                        </span>
-                        <input type="checkbox" id="st-codex-ed-selective" ${draft.selective !== false ? 'checked' : ''}>
-                        <span class="st-codex-toggle-track" aria-hidden="true"><span></span></span>
-                    </label>
-                    <span class="st-codex-hint" id="st-codex-filter-hint">How the optional filter keys must match when “Require a filter key” is on.</span>
-                </div>
-
-                <div class="st-codex-field">
-                    <label class="st-codex-label" for="st-codex-ed-content">Lore Content</label>
-                    <textarea class="st-codex-textarea" id="st-codex-ed-content"
-                              placeholder="The text SillyTavern injects when this entry triggers…"></textarea>
-                    <span class="st-codex-hint" id="st-codex-ed-tokens" aria-live="polite">Counting content tokens…</span>
-                </div>
+                </details>
             </div>
 
-            <div class="st-codex-panel" data-panel="settings" hidden>
+            <div class="st-codex-panel" id="st-codex-editor-settings" data-panel="settings" hidden>
                 <section class="st-codex-settings-group">
                     <h4 class="st-codex-settings-title"><i class="fa-solid fa-bolt"></i> Activation</h4>
                     ${toggleSetting('st-codex-ed-enabled', 'Enabled', !draft.disable, 'Allows this entry to trigger, matching the card switch')}
@@ -540,6 +550,8 @@ export function openEntryEditor(app, entry, defaultCategoryId, { duplicateOf } =
         const text = field.querySelector('textarea');
         const tags = field.querySelector('.st-codex-key-tags');
         const deleteModeButton = field.querySelector('.st-codex-key-delete-mode');
+        const hint = field.querySelector('.st-codex-hint');
+        const textHint = hint.textContent;
         let deleteMode = false;
         let revision = 0;
         text.addEventListener('input', () => tagDrafts.delete(text.id));
@@ -554,9 +566,9 @@ export function openEntryEditor(app, entry, defaultCategoryId, { duplicateOf } =
                 deleteModeButton.setAttribute('aria-pressed', 'false');
             }
             tags.classList.toggle('is-delete-mode', deleteMode);
-            field.querySelector('.st-codex-hint').textContent = deleteMode
+            hint.textContent = deleteMode
                 ? 'Delete mode is on: click a tag to remove it. Changes apply on Save.'
-                : 'Comma separated. Click a tag to edit it in Text mode.';
+                : showTags ? 'Select a tag to edit it in Text mode.' : textHint;
             field.querySelectorAll('[data-key-mode]').forEach(button => {
                 button.setAttribute('aria-pressed', String(button.dataset.keyMode === mode));
             });
@@ -612,13 +624,23 @@ export function openEntryEditor(app, entry, defaultCategoryId, { duplicateOf } =
     });
 
     /* ---------------------------------------------------------------- tabs */
+    const tabBody = $('.st-codex-modal-body');
+    const tabScroll = new Map();
+    let activeTab = 'visual';
     root.querySelectorAll('.st-codex-tab').forEach(tab => {
         tab.addEventListener('click', () => {
-            root.querySelectorAll('.st-codex-tab').forEach(item => item.classList.remove('st-codex-tab-active'));
-            tab.classList.add('st-codex-tab-active');
-            root.querySelectorAll('.st-codex-panel').forEach(panel => {
-                panel.hidden = panel.dataset.panel !== tab.dataset.tab;
+            if (activeTab === tab.dataset.tab) return;
+            tabScroll.set(activeTab, tabBody.scrollTop);
+            activeTab = tab.dataset.tab;
+            root.querySelectorAll('.st-codex-tab').forEach(item => {
+                const selected = item === tab;
+                item.classList.toggle('st-codex-tab-active', selected);
+                item.setAttribute('aria-pressed', String(selected));
             });
+            root.querySelectorAll('.st-codex-panel').forEach(panel => {
+                panel.hidden = panel.dataset.panel !== activeTab;
+            });
+            tabBody.scrollTop = tabScroll.get(activeTab) ?? 0;
         });
     });
 
@@ -854,7 +876,7 @@ export function openEntryEditor(app, entry, defaultCategoryId, { duplicateOf } =
     };
     $('#st-codex-ed-save').addEventListener('click', saveEntry);
 
-    setTimeout(() => $('#st-codex-ed-title')?.focus(), 30);
+    setTimeout(() => $('#st-codex-ed-title')?.focus({ preventScroll: true }), 30);
 }
 
 /* ---------------------------------------------------------- category manager */

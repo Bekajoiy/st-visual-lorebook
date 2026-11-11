@@ -1,56 +1,65 @@
-# Visual Lorebook
+# Visual Lorebook / Codex
 
-Visual Lorebook, also called **Codex**, gives SillyTavern’s lorebooks a full-screen card view. Browse your world at a glance, organize entries into colorful categories, and edit lore, keywords, and insertion settings in one place.
+Give your SillyTavern lorebooks a full-screen card view. Browse your world at a glance, group related entries, and write lore with the content and trigger keys side by side.
 
-![Visual Lorebook dashboard showing people, places, factions, and relics from a fictional setting](assets/screenshots/dashboard.webp)
+![Visual Lorebook dashboard with illustrated entries and color-coded categories from The Lantern Coast](assets/screenshots/dashboard.webp)
+
+## Works with your existing lorebooks
+
+Install Codex and open the lorebooks you already use. They open directly in the native World Info format, with no conversion or manual migration.
+
+Codex and SillyTavern’s built-in **World Info** editor work on the same books. You can use either editor, and SillyTavern continues to handle triggering and insertion. Categories, thumbnails, and other presentation choices live in a separate metadata section of the lorebook.
 
 ## Install
 
-1. In SillyTavern, open **Extensions → Install Extension**.
-2. Paste this repository URL:
+1. Open **Extensions → Install Extension** in SillyTavern.
+2. Paste this Git repository URL.
 
    ```text
    https://github.com/Bekajoiy/st-visual-lorebook
    ```
 
-3. Select **Install**. Open **Worlds/Lorebooks** and click **Codex** next to the heading.
+3. Choose **Install** or **Install just for me** and confirm when prompted.
+4. Open **Worlds/Lorebooks** and click **Codex** next to the heading. Pick a lorebook from the dashboard.
 
-You can also launch it from **Extensions → Visual Lorebook**, with the `/codex` command, or by pressing `Ctrl+Shift+L`. SillyTavern’s [extension installer guide](https://docs.sillytavern.app/extensions/#third-party-extensions) covers installation targets and prerequisites.
+You can also open Codex from its section in the Extensions panel, with `/codex`, or by pressing `Ctrl+Shift+L`. See the [SillyTavern installation guide](https://docs.sillytavern.app/extensions/#third-party-extensions) for Git and installer prerequisites.
 
 ## What you can do
 
-- **See the whole world.** Browse cards with thumbnails, content previews, activation states, keywords, and token counts. Hover or tap the key and settings buttons for details.
-- **Make it yours.** Create color-coded categories, drag entries between them, and crop uploaded or pasted images into square thumbnails.
-- **Edit in place.** Update lore text, work with keywords as text or tags, and adjust World Info settings in a two-tab editor.
-- **Find and organize entries quickly.** Search, filter, sort, duplicate entries, and move, enable, disable, or delete selected cards in bulk.
-- **Keep track of changes.** The editor prompts before discarding a draft and keeps it open if a save fails.
+- **Browse and organize.** Scan illustrated cards, create color-coded categories, and drag entries into place. Search, filter, and sort to find what you need.
+- **Write and edit.** Give entries a title, work with primary and optional keys in Text or Tags mode, and write in a dedicated lore area.
+- **Inspect without opening an editor.** Preview keywords and entry settings from a card. Click or tap to pin a preview, and see token counts on entries and categories as you browse.
+- **Work in batches.** Duplicate an entry, or move, enable, disable, and delete selected entries together.
+- **Frame a thumbnail.** Reposition and zoom an uploaded or pasted image before saving its square crop.
+- **Keep your draft.** Codex prompts before discarding changes and leaves an entry open when a save fails.
 
 ## Screenshots
 
-The screenshots use **The Lantern Coast**, a fictional demo lorebook.
+All captures use **The Lantern Coast**, a fictional demo lorebook.
 
-### Entry editor
+| Visual & Content editor | Entry Settings |
+| --- | --- |
+| ![Redesigned editor with a prominent title, lore writing area, and trigger keys](assets/screenshots/visual-editor.webp) | ![Entry Settings showing activation, insertion, and trigger timing controls](assets/screenshots/entry-settings.webp) |
 
-![Entry editor showing a cropped thumbnail, lore text, and keyword tags](assets/screenshots/entry-editor.webp)
+| Keyword preview | Entry settings preview |
+| --- | --- |
+| ![Pinned keyword preview with primary and optional filter tags](assets/screenshots/keyword-preview.webp) | ![Pinned card preview showing insertion, recursion, and activation settings](assets/screenshots/settings-preview.webp) |
 
-### Bulk organization
+### Thumbnail cropping
 
-![Visual Lorebook dashboard with selected cards and controls for moving, enabling, or disabling them](assets/screenshots/bulk-organize.webp)
+<img src="assets/screenshots/thumbnail-crop.webp" alt="Thumbnail cropper showing the original image, square crop preview, and zoom slider" width="720">
 
 ## Compatibility
 
-Tested with **SillyTavern 1.19.0**. Visual Lorebook uses native World Info and SillyTavern’s tokenizer. Optional direct opening from the native **Pick to Edit** selector is off by default. Enable it under **Extensions → Visual Lorebook / Codex**.
-
-When editing the same lorebook across tabs or editors, finish one save before starting another. Simultaneous saves can overwrite each other.
+Tested with **SillyTavern 1.19.0**. When using multiple tabs or editors, finish one save before starting another on the same lorebook. Simultaneous saves can still overwrite each other.
 
 ## Development
 
-Run the included store and data-preservation tests with Node.js 24 or later:
+Run the portable data-preservation and cache tests with Node.js 24 or later.
 
 ```sh
-node --test tests/store.test.mjs
+node --test tests/store.test.mjs tests/native-cache.test.mjs
 ```
-
 
 ## License
 

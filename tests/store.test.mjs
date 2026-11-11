@@ -8,6 +8,7 @@ import {worldInfoCache} from './world-info-fixture.js';
 const source = await readFile(new URL('../src/store.js', import.meta.url), 'utf8');
 const modulePath = join(tmpdir(), `visual-lorebook-audit-${process.pid}.mjs`);
 await writeFile(modulePath, source.replace("'/scripts/world-info.js'", JSON.stringify(new URL('./world-info-fixture.js', import.meta.url).href))
+    .replace("'./native-cache.js'", JSON.stringify(new URL('../src/native-cache.js', import.meta.url).href))
     .replace('const REQUEST_TIMEOUT_MS = 15000;', 'const REQUEST_TIMEOUT_MS = 150;'));
 const store = await import(pathToFileURL(modulePath));
 after(() => unlink(modulePath));

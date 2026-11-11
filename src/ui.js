@@ -434,25 +434,14 @@ function onKeydown(event) {
     close();
 }
 
-export async function open(preferredWorld, { exact = false } = {}) {
+export async function open(preferredWorld) {
     if (document.querySelector('.st-codex-modal-backdrop')) return;
     mount();
     const reopening = !isOpen();
     const previousBook = state.data;
-    let availableWorlds;
-    if (exact) {
-        try {
-            availableWorlds = await listWorlds();
-            if (!availableWorlds.includes(preferredWorld)) throw new Error('That lorebook is no longer available.');
-        } catch (error) {
-            toast(error.message || 'Could not open that lorebook.', true);
-            return;
-        }
-        if (document.querySelector('.st-codex-modal-backdrop')) return;
-    }
     els.overlay.classList.remove('st-codex-hidden');
     document.body.classList.add('st-codex-body-lock');
-    try { await refreshWorldList(preferredWorld || (await getActiveWorldName()) || state.worldName, availableWorlds); }
+    try { await refreshWorldList(preferredWorld || (await getActiveWorldName()) || state.worldName); }
     catch (error) { toast(error.message || 'Could not load the lorebook list.', true); }
     if (isOpen()) {
         if (reopening && previousBook && previousBook === state.data) renderBody();
@@ -493,12 +482,12 @@ export function toggle() {
 
 /* -------------------------------------------------------------- world loading */
 
-async function refreshWorldList(preferred, availableWorlds) {
+async function refreshWorldList(preferred) {
     if (app.busy) return;
     if (!await saveBeforeLeaving()) return;
     const generation = ++openBookGeneration;
     const revision = saveRevision;
-    const worlds = availableWorlds ?? await listWorlds();
+    const worlds = await listWorlds();
     if (generation !== openBookGeneration || revision !== saveRevision || !isOpen()
         || state.dirty || pendingSaves || document.querySelector('.st-codex-modal-backdrop')) return;
     const options = worlds.length
@@ -1409,6 +1398,7 @@ export function flushSave() {
             return true;
         })
         .catch(error => {
+            if (state.data === data && state.worldName === world && isBookStale(data)) pendingReload = true;
             console.error('[VisualLorebook] Save failed', error);
             toast(error.message || 'Could not save the lorebook. Check the console.', true);
             return false;
